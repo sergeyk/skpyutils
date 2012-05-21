@@ -15,4 +15,4 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 import skpyutils.util as ut
-import skpyutils.mpi as mpi
+import skpyutils.common_mpi as mpi
