@@ -1,8 +1,8 @@
-##############################################
-# Tic/Toc
-##############################################
+import time
+
 class TicToc:
   "MATLAB tic/toc."
+  
   def __init__(self):
     self.labels = {}
 
@@ -19,8 +19,9 @@ class TicToc:
       label = '__default'
     assert(label in self.labels)
     elapsed = time.time()-self.labels[label]
+    name = " (%s)"%label if label else ""
     if not quiet:
-      print "Time elapsed: %.3f"%elapsed
+      print "Time elapsed%s: %.3f"%(name,elapsed)
     return elapsed
   
   def qtoc(self,label=None):

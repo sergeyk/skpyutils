@@ -1,1 +1,0 @@
-A collection of Python code that is useful in most of my projects.
