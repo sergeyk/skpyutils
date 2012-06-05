@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import imread, imshow
@@ -40,16 +41,20 @@ def colorhist(img):
   ax.grid(True,which="major",ls="-",lw=1,color="k")
   return fig
 
-if __name__ == '__main__':
-  img = imread('test/c.png')
+def test():
+  "Show a couple of examples of using self."
+  import skpyutils
+  img = imread(os.path.join(skpyutils.__path__[0],'test/c.png'))
   imshow(img);plt.show()
   fig = colorhist(img)
   plt.show(fig)
   plt.clf()
 
-  img = imread('test/c2.png')
+  img = imread(os.path.join(skpyutils.__path__[0],'test/c2.png'))
   imshow(img);plt.show()
   fig = colorhist(img)
   plt.show(fig)
   plt.clf()
-  import sys; sys.exit()
+
+if __name__ == '__main__':
+  test()
