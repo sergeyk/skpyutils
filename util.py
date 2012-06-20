@@ -7,10 +7,34 @@ import subprocess
 import operator
 import os
 import time
+import json
 import numpy as np
 import scipy.stats as st
 from skpyutils.table import Table
 from skpyutils.tictoc import TicToc
+
+import re
+_slugify_strip_re = re.compile(r'[^\w\s-]')
+_slugify_hyphenate_re = re.compile(r'[-\s]+')
+def slugify(value):
+  """
+  Normalizes string, converts to lowercase, removes non-alpha characters,
+  and converts spaces to hyphens.
+  
+  From Django's "django/template/defaultfilters.py".
+  """
+  import unicodedata
+  if not isinstance(value, unicode):
+      value = unicode(value)
+  value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
+  value = unicode(_slugify_strip_re.sub('', value).strip().lower())
+  return _slugify_hyphenate_re.sub('-', value)
+
+def load_json(filename):
+  assert(os.path.exists(filename))
+  with open(filename) as f:
+    data = json.load(f)
+  return data
 
 ###################
 # Ndarray manipulations
