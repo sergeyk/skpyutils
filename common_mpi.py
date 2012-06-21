@@ -5,7 +5,7 @@ comm = MPI.COMM_WORLD
 comm_rank = comm.Get_rank()
 comm_size = comm.Get_size()
 
-def safebarrier(comm==None, tag=0, sleep=0.01):
+def safebarrier(comm=None, tag=0, sleep=0.01):
   """
   This is a better mpi barrier than MPI.comm.barrier(): the original barrier
   may cause idle processes to still occupy the CPU, while this barrier waits
