@@ -13,6 +13,19 @@ import scipy.stats as st
 from skpyutils.table import Table
 from skpyutils.tictoc import TicToc
 
+class Report:
+  "Convenience class to simplify aggregating reports to write to file."
+  def __init__(self):
+    self.report = ''
+
+  def append(self,str):
+    "Print str and append it to the report so far as a new line."
+    print(str)
+    self.report += str+'\n'
+
+  def __repr__(self):
+    return self.report
+
 import re
 _slugify_strip_re = re.compile(r'[^\w\s-]')
 _slugify_hyphenate_re = re.compile(r'[-\s]+')
