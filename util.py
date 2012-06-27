@@ -13,6 +13,16 @@ import scipy.stats as st
 from skpyutils.table import Table
 from skpyutils.tictoc import TicToc
 
+from sklearn.cross_validation import StratifiedShuffleSplit
+def stratified_shuffle_split(X,y,test_size=0.25,random_state=0):
+  sss = StratifiedShuffleSplit(y, 2, test_size=test_size, random_state=random_state)
+  for train_index, test_index in sss:
+    X_train = X[train_index,:]
+    y_train = y[train_index]
+    X_test = X[test_index,:]
+    y_test = y[test_index]
+  return X_train,y_train,X_test,y_test
+
 class Report:
   "Convenience class to simplify aggregating reports to write to file."
   def __init__(self):
