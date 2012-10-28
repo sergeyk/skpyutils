@@ -1,20 +1,40 @@
 import time
 
 class TicToc:
-  "MATLAB tic/toc."
+  """
+  MATLAB-like tic/toc.
+  """
   
   def __init__(self):
     self.labels = {}
 
   def tic(self,label=None):
-    "Start timer for given label. Returns self."
+    """
+    Start timer for given label.
+
+    Args:
+      label (string): optional label for the timer.
+
+    Returns:
+      self
+    """
     if not label:
       label = '__default'
     self.labels[label] = time.time()
     return self
 
   def toc(self,label=None,quiet=False):
-    "Return elapsed time for given label. Optionally print time."
+    """
+    Return elapsed time for given label.
+
+    Args:
+      label (string): optional label for the timer.
+
+      quiet (boolean): optional, prints time elapsed if false
+
+    Returns:
+      elapsed (float): time elapsed
+    """
     if not label:
       label = '__default'
     assert(label in self.labels)
@@ -25,5 +45,7 @@ class TicToc:
     return elapsed
   
   def qtoc(self,label=None):
-    "Quiet toc()"
+    """
+    Call toc(label, quiet=True).
+    """
     return self.toc(label,quiet=True)

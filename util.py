@@ -24,7 +24,9 @@ def stratified_shuffle_split(X,y,test_size=0.25,random_state=0):
   return X_train,y_train,X_test,y_test
 
 class Report:
-  "Convenience class to simplify aggregating reports to write to file."
+  """
+  Convenience class to simplify aggregating reports to write to file.
+  """
   def __init__(self):
     self.report = ''
 
