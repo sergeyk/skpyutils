@@ -5,13 +5,17 @@ Sergey Karayev - http://sergeykarayev.com
 
 import subprocess
 import operator
-import os
 import time
 import json
 import numpy as np
 import scipy.stats as st
 from skpyutils.table import Table
 from skpyutils.tictoc import TicToc
+
+import os
+from os.path import join as opjoin
+from os.path import exists as opexists
+
 
 from sklearn.cross_validation import StratifiedShuffleSplit
 def stratified_shuffle_split(X,y,test_size=0.25,random_state=0):

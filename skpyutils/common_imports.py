@@ -4,9 +4,6 @@ I use all of these imports in 90% of all code I write.
 
 import os
 import sys
-from os.path import join as opjoin
-from os.path import exists as opexists
-
 import json
 
 from IPython import embed
