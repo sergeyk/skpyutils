@@ -16,7 +16,6 @@ import os
 from os.path import join as opjoin
 from os.path import exists as opexists
 
-
 from sklearn.cross_validation import StratifiedShuffleSplit
 def stratified_shuffle_split(X,y,test_size=0.25,random_state=0):
   sss = StratifiedShuffleSplit(y, 2, test_size=test_size, random_state=random_state)
@@ -134,34 +133,44 @@ def collect_with_index(seq, func, kwargs=None, index_col_name=None):
 def random_subset_up_to_N(N, max_num=None):
   """
   Return a random subset of size min(N,max_num) of non-negative integers
-  up to N, in permuted order.
-  If max_num >= N, order of integers 0..N is not permuted.
-  N and max_num must be positive.
-  If max_num is not given, max_num=N.
+  up to N, in a permuted order.
+  
+  Args:
+    N (int): size of original set.
+
+    max_num (int): [optional]
+      Size of the random subset.
+      If not given, set to N.
+
+  Returns:
+    ndarray of randomly permuted integers [0,N) of size max_num
+  
+  Raises:
+    ValueError if N or max_num are <= 0.
   """
-  if max_num == None:
-    max_num = N
   if N <= 0 or max_num <= 0:
-    raise ValueError("Can't deal with N or max_num <= 0")
-  if max_num >= N:
-    return range(0,N)
+    raise ValueError("Both N and max_num must > 0")
+  if not max_num or max_num > N:
+    max_num = N
   return np.random.permutation(N)[:max_num]
 
-def random_subset(vals, max_num=None, ordered=False):
+def random_subset(vals, max_num=None):
   """
   Return a random subset of size min(len(vals),max_num) of a list of
-  values, in permuted order (unless ordered=True). If max_num is not given,
-  max_num=len(vals).
-  If max_num >= N, order is not permuted.
-  NOTE: returns a list, not an array
+  values, randomly sampled without replacement from the original list.
+
+  Order is always permuted, even if max_num == len(vals).
+
+  Args:
+    vals (iterable): values to subset
+
+    max_num (int): [optional]
+      If not given or greater than len(vals), set to len(vals).
+
+  Returns:
+    list of values of size min(len(vals),max_num)
   """
-  if max_num == None:
-    max_num = len(vals)
-  if max_num >= len(vals) and ordered:
-    return vals
   arr = np.array(vals)[random_subset_up_to_N(len(vals),max_num)]
-  if ordered:
-    arr = np.sort(arr)
   return arr.tolist()
 
 def makedirs(dirname):
