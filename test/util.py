@@ -26,6 +26,10 @@ class Basic(unittest.TestCase):
     # but sorted, it definitely should
     assert(np.all(sorted(x) == np.arange(0,100)))
 
+    x = util.random_subset_up_to_N(100)
+    assert(not np.all(x == np.arange(0,100)))
+    assert(np.all(sorted(x) == np.arange(0,100)))
+
     x = util.random_subset_up_to_N(100,10000)
     assert(not np.all(x == np.arange(0,100)))
     assert(np.all(sorted(x) == np.arange(0,100)))
@@ -41,10 +45,12 @@ class Basic(unittest.TestCase):
     assert(np.all(np.array(x)>=0))
 
     x = util.random_subset(np.arange(100),200)
-    self.assertIs(type(x),list)
     assert(len(x)==100)
-    assert(np.all(np.array(x)<100))
-    assert(np.all(np.array(x)>=0))
+    assert(not np.all(x == np.arange(0,100)))
+    assert(np.all(sorted(x) == np.arange(0,100)))
+
+    x = util.random_subset(np.arange(100))
+    assert(len(x)==100)
     assert(not np.all(x == np.arange(0,100)))
     assert(np.all(sorted(x) == np.arange(0,100)))
 

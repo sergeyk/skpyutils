@@ -148,9 +148,11 @@ def random_subset_up_to_N(N, max_num=None):
   Raises:
     ValueError if N or max_num are <= 0.
   """
+  if max_num == None:
+    max_num = N
   if N <= 0 or max_num <= 0:
     raise ValueError("Both N and max_num must > 0")
-  if not max_num or max_num > N:
+  if max_num > N:
     max_num = N
   return np.random.permutation(N)[:max_num]
 
