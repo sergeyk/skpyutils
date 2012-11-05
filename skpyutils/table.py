@@ -15,22 +15,34 @@ class Table:
   ###################
   def __init__(self,arr=None,cols=None,index=None,name=None):
     """
-    If arr and cols are passed in, initialize with them by reference.
-    If arr is None, initialize with np.array([]) which has shape (0,).
-    - index gives names to the rows.
-    - name is a place to keep some optional identifying information.
+    Initialize the Table.
+
+    Args:
+      - arr (ndarray): [optional] data array. Initialized by reference.
+        - If None:
+            initialize with np.array([]), which has shape (0,).
+        - If empty (0,) or empty (0,N) array:
+            initialize with it by reference, keeping the shape.
+        - If (N,) or (M,N) array:
+            initialize with it by reference, converting (N,) arrays to (1,N)
+
+      - cols (list): [optional] list of column names. Initialized by reference.
+
+      - index (list): [optional] list of row names.
+
+      - name (string): [optional] misc. identifying information.
+
+    Returns:
+      None
+
+    Raises:
+      None
     """
-    # Passed-in array can be None, or an empty (0,) array,
-    # or an empty (0,N) array, or (M,), or (M,N).
-    # The last two cases are good.
-    # The (0,N) case is special and we maintain that shape.
-    # Otherwise, we set to empty (0,) array.
     self.arr = np.array([])
     if arr != None:
       if arr.ndim == 2 and arr.shape[0]==0:
         self.arr = arr
       if arr.shape[0]>0:
-        # convert (M,) arrays to (1,M) and leave (M,N) arrays alone
         self.arr = np.atleast_2d(arr)
     self.cols = cols
     self.index = index
@@ -38,15 +50,21 @@ class Table:
 
   @property
   def shape(self):
-    "Return shape of the array."
+    """
+    Return shape of the array.
+    """
     return self.arr.shape
 
   def ind(self,col_name):
-    "Return index of the given column name."
+    """
+    Return index of the given column name.
+    """
     return self.cols.index(col_name)
 
   def __copy__(self):
-    "Make a copy of the Table and return it."
+    """
+    Make a copy of the Table and return it.
+    """
     arr = self.arr.copy() if not self.arr == None else None
     cols = list(self.cols) if not self.cols == None else None
     index = list(self.index) if hasattr(self,'index') and not self.index == None else None
@@ -55,31 +73,36 @@ class Table:
     return self.__copy__()
 
   def __repr__(self):
-    # TODO: print index?
-    return """
-Table name: %(name)s | size: %(shape)s
-%(cols)s
-%(arr)s
-"""%dict(self.__dict__.items()+{'shape':self.shape}.items())
+    str = "Table name: {name} | size: {shape}".format(name=self.name, shape=self.shape)
+    if self.index:
+      str += "\n"+str(self.index)
+    str += "\n"+str(self.cols)
+    str += "\n"+str(self.arr)
+    return str
 
   def __eq__(self,other):
-    "Two Tables are equal if all columns and their names are equal, in order."
+    """
+    Two Tables are equal if all columns and their names are equal, in order.
+    """
     ret = np.all(self.arr==other.arr) and \
           (self.cols == other.cols)
-    # TODO
-    #if hasattr(self,'index') and hasattr(other,'index'):
-      #ret = ret and (self.index == other.index)
+    if hasattr(self,'index') and hasattr(other,'index'):
+      ret == ret and (self.index == other.index)
     return ret
 
   def sum(self,dim=0):
-    "Return sum of the array along given dimension."
+    """
+    Return sum of the array along given dimension.
+    """
     return np.sum(self.arr,dim)
 
   ###################
   # Save/Load
   ###################
   def save_csv(self,filename):
-    "Write array to file in csv format."
+    """
+    Write array to file in csv format.
+    """
     with open(filename,'w') as f:
       f.write("%s\n"%','.join(self.cols))
       if hasattr(self,'index'):
@@ -89,7 +112,9 @@ Table name: %(name)s | size: %(shape)s
 
   @classmethod
   def load_from_csv(cls,filename):
-    """Creates a new Table object by reading in a csv file with header."""
+    """
+    Creates a new Table object by reading in a csv file with header.
+    """
     table = Table()
     with open(filename) as f:
       table.cols = f.readline().strip().split(',')
@@ -135,7 +160,9 @@ Table name: %(name)s | size: %(shape)s
       return arr.squeeze()
 
   def subset_arr_and_cols_and_index(self, names_or_inds_or_mask, axis):
-    "Helper method to subset() and subset_arr()."
+    """
+    Helper method to subset() and subset_arr().
+    """
     # If the argument is not a list or array, make it a list
     index = None
     if not isinstance(names_or_inds_or_mask, np.ndarray) and \
@@ -170,15 +197,21 @@ Table name: %(name)s | size: %(shape)s
     return (arr,cols,index)
 
   def row_subset(self,names_or_inds_or_mask):
-    "Return Table with only the specified rows. See subset()."
+    """
+    Return Table with only the specified rows. See subset().
+    """
     return self.subset(names_or_inds_or_mask,axis=0)
 
   def row_subset_arr(self,names_or_inds_or_mask):
-    "Like row_subset() but only return the corresponding array."
+    """
+    Like row_subset() but only return the corresponding array.
+    """
     return self.subset_arr(names_or_inds_or_mask,axis=0)
 
   def sort_by_column(self,col_name,descending=False):
-    "Return copy of self with array sorted by column."
+    """
+    Return copy of self with array sorted by column.
+    """
     col = self.arr[:,self.cols.index(col_name)]
     col = -col if descending else col
     inds = col.argsort()
@@ -210,7 +243,9 @@ Table name: %(name)s | size: %(shape)s
     return table
 
   def with_column_omitted(self,col_name):
-    "Return Table with given column omitted. Not necessarily a copy."
+    """
+    Return Table with given column omitted. Not necessarily a copy.
+    """
     drop_mask = np.arange(self.shape[1])==self.cols.index(col_name)
     if self.arr.size > 0:
       arr = self.arr[:,-drop_mask]
@@ -221,7 +256,9 @@ Table name: %(name)s | size: %(shape)s
     return Table(arr,cols,self.index,self.name)
 
   def append_column(self,col_name,vals):
-    "Return Table that is self with added given column at the end."
+    """
+    Return Table that is self with added given column at the end.
+    """
     if isinstance(vals,list):
       vals = np.array(vals)
     assert(vals.ndim==1 and vals.shape[0]==self.shape[0])
