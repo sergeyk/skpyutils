@@ -20,12 +20,18 @@ class Table:
     - index gives names to the rows.
     - name is a place to keep some optional identifying information.
     """
-    # Passed-in array can be None, or an empty (0,) array, or (M,), or (M,N).
-    # Only the last two cases are good, otherwise we set to empty (0,) array.
+    # Passed-in array can be None, or an empty (0,) array,
+    # or an empty (0,N) array, or (M,), or (M,N).
+    # The last two cases are good.
+    # The (0,N) case is special and we maintain that shape.
+    # Otherwise, we set to empty (0,) array.
     self.arr = np.array([])
-    if arr != None and arr.shape[0]>0:
-      # convert (M,) arrays to (1,M) and leave (M,N) arrays alone
-      self.arr = np.atleast_2d(arr)
+    if arr != None:
+      if arr.ndim == 2 and arr.shape[0]==0:
+        self.arr = arr
+      if arr.shape[0]>0:
+        # convert (M,) arrays to (1,M) and leave (M,N) arrays alone
+        self.arr = np.atleast_2d(arr)
     self.cols = cols
     self.index = index
     self.name = name
@@ -43,7 +49,7 @@ class Table:
     "Make a copy of the Table and return it."
     arr = self.arr.copy() if not self.arr == None else None
     cols = list(self.cols) if not self.cols == None else None
-    index = list(self.index) if not self.index == None else None
+    index = list(self.index) if hasattr(self,'index') and not self.index == None else None
     return Table(arr,cols,index,self.name) 
   def copy(self):
     return self.__copy__()
@@ -58,9 +64,12 @@ Table name: %(name)s | size: %(shape)s
 
   def __eq__(self,other):
     "Two Tables are equal if all columns and their names are equal, in order."
-    return np.all(self.arr==other.arr) and \
-          self.cols == other.cols and \
-          self.index == other.index
+    ret = np.all(self.arr==other.arr) and \
+          (self.cols == other.cols)
+    # TODO
+    #if hasattr(self,'index') and hasattr(other,'index'):
+      #ret = ret and (self.index == other.index)
+    return ret
 
   def sum(self,dim=0):
     "Return sum of the array along given dimension."
@@ -73,7 +82,8 @@ Table name: %(name)s | size: %(shape)s
     "Write array to file in csv format."
     with open(filename,'w') as f:
       f.write("%s\n"%','.join(self.cols))
-      f.write("%s\n"%','.join(self.index))
+      if hasattr(self,'index'):
+        f.write("%s\n"%','.join(self.index))
       f.write("%s\n"%self.name)
       np.savetxt(f, self.arr, delimiter=',')
 
@@ -114,6 +124,8 @@ Table name: %(name)s | size: %(shape)s
     If the array to be returned has 1 as one of its dimensions,
     returns an (N,) array instead.
     """
+    if self.arr.size == 0:
+      return self.arr
     arr = self.subset_arr_and_cols_and_index(names_or_inds_or_mask,axis)[0]
     # squeeze() has a weird behavior where if the array has noly one element,
     # it will return a ()-sized array. We always want to return (N,).
@@ -125,6 +137,7 @@ Table name: %(name)s | size: %(shape)s
   def subset_arr_and_cols_and_index(self, names_or_inds_or_mask, axis):
     "Helper method to subset() and subset_arr()."
     # If the argument is not a list or array, make it a list
+    index = None
     if not isinstance(names_or_inds_or_mask, np.ndarray) and \
        not isinstance(names_or_inds_or_mask, types.ListType):
       names_or_inds_or_mask = [names_or_inds_or_mask]
@@ -132,6 +145,9 @@ Table name: %(name)s | size: %(shape)s
     # bool is a subclass of int, so this check gets both ints and booleans
     if isinstance(names_or_inds_or_mask[0],types.IntType):
       inds = names_or_inds_or_mask
+    # we also support floats, for backwards compatibility reasons
+    elif isinstance(names_or_inds_or_mask[0],types.FloatType):
+      inds = [int(x) for x in names_or_inds_or_mask]
     elif isinstance(names_or_inds_or_mask[0],types.StringType):
       if axis==0:
         assert(self.index)
@@ -143,11 +159,13 @@ Table name: %(name)s | size: %(shape)s
 
     if axis==0:
       cols = self.cols
-      index = np.array(self.index)[inds].tolist() if self.index else None
+      if hasattr(self,'index'):
+        index = np.array(self.index)[inds].tolist() if self.index else None
       arr = self.arr[inds,:]
     else:
       cols = np.array(self.cols)[inds].tolist()
-      index = self.index
+      if hasattr(self,'index'):
+        index = self.index
       arr = self.arr[:,inds]
     return (arr,cols,index)
 
@@ -165,7 +183,8 @@ Table name: %(name)s | size: %(shape)s
     col = -col if descending else col
     inds = col.argsort()
     self.arr = self.arr[inds]
-    self.index = np.array(self.index)[inds].tolist() if self.index else None
+    if hasattr(self,'index'):
+      self.index = np.array(self.index)[inds].tolist() if self.index else None
     return self
 
   def filter_on_column(self, col_name, val=True, op=operator.eq, omit=False):
@@ -193,7 +212,20 @@ Table name: %(name)s | size: %(shape)s
   def with_column_omitted(self,col_name):
     "Return Table with given column omitted. Not necessarily a copy."
     drop_mask = np.arange(self.shape[1])==self.cols.index(col_name)
-    arr = self.arr[:,-drop_mask]
+    if self.arr.size > 0:
+      arr = self.arr[:,-drop_mask]
+    else:
+      arr = self.arr
     cols = list(self.cols)
     cols.remove(col_name)
     return Table(arr,cols,self.index,self.name)
+
+  def append_column(self,col_name,vals):
+    "Return Table that is self with added given column at the end."
+    if isinstance(vals,list):
+      vals = np.array(vals)
+    assert(vals.ndim==1 and vals.shape[0]==self.shape[0])
+    table = self.copy()
+    table.cols = self.cols+[col_name]
+    table.arr = np.hstack((self.arr,np.atleast_2d(vals).T))
+    return table
