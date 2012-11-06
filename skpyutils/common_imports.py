@@ -4,7 +4,7 @@ I use all of these imports in 90% of all code I write.
 
 import os
 import sys
-import json
+import simplejson as json
 
 from IPython import embed
 

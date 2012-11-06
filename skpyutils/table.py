@@ -73,12 +73,12 @@ class Table:
     return self.__copy__()
 
   def __repr__(self):
-    str = "Table name: {name} | size: {shape}".format(name=self.name, shape=self.shape)
+    s = "Table name: {name} | size: {shape}".format(name=self.name, shape=self.shape)
     if self.index:
-      str += "\n"+str(self.index)
-    str += "\n"+str(self.cols)
-    str += "\n"+str(self.arr)
-    return str
+      s += "\n"+str(self.index)
+    s += "\n"+str(self.cols)
+    s += "\n"+str(self.arr)
+    return s
 
   def __eq__(self,other):
     """
