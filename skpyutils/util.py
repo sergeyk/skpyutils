@@ -106,11 +106,10 @@ def collect(seq, func, kwargs=None, with_index=False, index_col_name=None):
   cols = None
   for index,image in enumerate(seq):
     results = func(image, **kwargs) if kwargs else func(image)
-    if results != None and results.shape[0]>0:
-      from synthetic.table import Table
-      if isinstance(results,Table):
-        cols = results.cols
-        results = results.arr
+    if isinstance(results,Table):
+      cols = results.cols
+      results = results.arr
+    if results.shape[0]>0:
       if with_index:
         all_results.append(append_index_column(results,index))
       else:

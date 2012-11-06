@@ -68,7 +68,7 @@ class TicToc:
       none
     """
     if label not in self.labels:
-      tt.tic(label)
-    if tt.qtoc(label) > 1:
-      print()
-      tt.tic(label)
+      self.tic(label)
+    if self.qtoc(label) > 1:
+      print(msg)
+      self.tic(label)
