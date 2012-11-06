@@ -28,9 +28,9 @@ class TicToc:
     Return elapsed time for given label.
 
     Args:
-      label (string): optional label for the timer.
+      label (string): [optional] label for the timer.
 
-      quiet (boolean): optional, prints time elapsed if false
+      quiet (boolean): [optional] print time elapsed if false
 
     Returns:
       elapsed (float): time elapsed
@@ -49,3 +49,26 @@ class TicToc:
     Call toc(label, quiet=True).
     """
     return self.toc(label,quiet=True)
+
+  def running(self, label=None, msg=None, interval=1):
+    """
+    Print <msg> every <interval> seconds, running the timer for <label>.
+
+    Args:
+      label (string): [optional] label for the timer
+
+      msg (string): [optional] message to print
+
+      interval (int): [optional] print every <interval> seconds
+
+    Return
+      self
+
+    Raises
+      none
+    """
+    if label not in self.labels:
+      tt.tic(label)
+    if tt.qtoc(label) > 1:
+      print()
+      tt.tic(label)
