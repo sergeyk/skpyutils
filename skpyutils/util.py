@@ -215,6 +215,31 @@ def mean_squared_error(y_true,y_pred):
   "Because sklearn.metrics is wrong."
   return np.mean((y_pred - y_true) ** 2)
 
+def add_polynomial_terms(X):
+  """
+  Return matrix X augmented with columns representing 2-dgree polynomial
+  expansions of its columns.
+
+  Examples
+  --------
+  >>> X = np.array([[1,2,3,4],[5,6,7,8]]).T
+  array([[1, 5],
+         [2, 6],
+         [3, 7],
+         [4, 8]])
+  >>> add_polynomial_terms(X)
+  array([[ 1,  5,  1,  5, 25],
+         [ 2,  6,  4, 12, 36],
+         [ 3,  7,  9, 21, 49],
+         [ 4,  8, 16, 32, 64]])
+
+  """
+  from itertools import combinations_with_replacement as cwr
+  # TODO: will need to combine column indices
+  col_combinations = [x for x in cwr(range(X.shape[1]), 2)]
+  poly_cols = [np.prod(X[:,c],axis=1) for c in col_combinations]
+  return np.hstack((X, np.array(poly_cols).T))
+
 def cartesian(arrays, out=None):
     """
     from http://stackoverflow.com/questions/1208118/using-numpy-to-build-an-array-of-all-combinations-of-two-arrays
