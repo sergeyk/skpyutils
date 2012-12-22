@@ -3,6 +3,8 @@ Helpful classes and methods for everyday Python usage.
 Sergey Karayev - http://sergeykarayev.com
 """
 
+import os
+import sys
 import subprocess
 import operator
 import time
@@ -10,235 +12,165 @@ import json
 import numpy as np
 import scipy.stats as st
 from skpyutils.table import Table
-from skpyutils.tictoc import TicToc
 
-import os
-from os.path import join as opjoin
-from os.path import exists as opexists
-
-from sklearn.cross_validation import StratifiedShuffleSplit
-def stratified_shuffle_split(X,y,test_size=0.25,random_state=0):
-  sss = StratifiedShuffleSplit(y, 2, test_size=test_size, random_state=random_state)
-  for train_index, test_index in sss:
-    X_train = X[train_index,:]
-    y_train = y[train_index]
-    X_test = X[test_index,:]
-    y_test = y[test_index]
-  return X_train,y_train,X_test,y_test
 
 class Report:
-  """
-  Convenience class to simplify aggregating reports to write to file.
-  """
-  def __init__(self):
-    self.report = ''
+    """
+    Convenience class to simplify aggregating reports to write to file.
+    """
+    def __init__(self):
+        self.report = ''
 
-  def append(self,str):
-    "Print str and append it to the report so far as a new line."
-    print(str)
-    self.report += str+'\n'
+    def append(self, str):
+        "Print str and append it to the report so far as a new line."
+        print(str)
+        self.report += str + '\n'
 
-  def __repr__(self):
-    return self.report
+    def __repr__(self):
+        return self.report
 
-import re
-_slugify_strip_re = re.compile(r'[^\w\s-]')
-_slugify_hyphenate_re = re.compile(r'[-\s]+')
-def slugify(value):
-  """
-  Normalizes string, converts to lowercase, removes non-alpha characters,
-  and converts spaces to hyphens.
-  
-  From Django's "django/template/defaultfilters.py".
-  """
-  import unicodedata
-  if not isinstance(value, unicode):
-      value = unicode(value)
-  value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-  value = unicode(_slugify_strip_re.sub('', value).strip().lower())
-  return _slugify_hyphenate_re.sub('-', value)
 
 def load_json(filename):
-  assert(os.path.exists(filename))
-  with open(filename) as f:
-    data = json.load(f)
-  return data
+    assert(os.path.exists(filename))
+    with open(filename) as f:
+        data = json.load(f)
+    return data
 
-###################
-# Ndarray manipulations
-###################
+
 def append_index_column(arr, index):
-  "Take an m x n array, and appends a column containing index."
-  ind_vector = np.ones((np.shape(arr)[0],1)) * index
-  arr = np.hstack((arr, ind_vector))
-  return arr
+    """
+    Take an m x n array, and appends a column containing index.
+    """
+    ind_vector = np.ones((np.shape(arr)[0], 1)) * index
+    arr = np.hstack((arr, ind_vector))
+    return arr
+
 
 def filter_on_column(arr, ind, val, op=operator.eq, omit=False):
-  """
-  Returns the rows of arr where arr[:,ind]==val,
-  optionally omitting the ind column.
-  """
-  try:
-    arr = arr[op(arr[:,ind], val),:]
-  except:
+    """
+    Returns the rows of arr where arr[:,ind]==val,
+    optionally omitting the ind column.
+    """
+    try:
+        arr = arr[op(arr[:, ind], val), :]
+    except:
+        return arr
+    # TODO: fix this mess
+    if omit:
+        final_ind = range(np.shape(arr)[1])
+        final_ind = np.delete(final_ind, ind)
+        arr = arr[:, final_ind]
     return arr
-  # TODO: fix this mess
-  if omit:
-    final_ind = range(np.shape(arr)[1])
-    final_ind = np.delete(final_ind, ind)
-    arr = arr[:,final_ind]
-  return arr
+
 
 def collect(seq, func, kwargs=None, with_index=False, index_col_name=None):
-  """
-  Take a sequence seq of arguments to function func.
-    - func should return a Table or an ndarray.
-    - kwargs is a dictionary of arguments that will be passed to func.
+    """
+    Take a sequence seq of arguments to function func.
+      - func should return a Table or an ndarray.
+      - kwargs is a dictionary of arguments that will be passed to func.
 
-  Return the outputs of func concatenated vertically into an np.array
-  (thereby making copies of the collected data).
-  If the outputs are Tables, concatenate the arrays and return a Table.
+    Return the outputs of func concatenated vertically into an np.array
+    (thereby making copies of the collected data).
+    If the outputs are Tables, concatenate the arrays and return a Table.
 
-  If with_index is True, append index column to outputs.
-  If the outputs are Tables, index_col_name must be provided for this purpose.
-  """
-  all_results = []
-  cols = None
-  for index,image in enumerate(seq):
-    results = func(image, **kwargs) if kwargs else func(image)
-    if isinstance(results,Table):
-      cols = results.cols
-      results = results.arr
-    if results.shape[0]>0:
-      if with_index:
-        all_results.append(append_index_column(results,index))
-      else:
-        all_results.append(results)
-  ret = np.array([])
-  if len(all_results)>0:
-    ret = np.vstack(all_results)
-  if cols:
-    assert(index_col_name)
-    ret = Table(ret, list(cols+[index_col_name]))
-  return ret
+    If with_index is True, append index column to outputs.
+    If the outputs are Tables, index_col_name must be provided for this purpose.
+    """
+    all_results = []
+    cols = None
+    for index, image in enumerate(seq):
+        results = func(image, **kwargs) if kwargs else func(image)
+        if isinstance(results, Table):
+            cols = results.cols
+            results = results.arr
+        if results.shape[0] > 0:
+            if with_index:
+                all_results.append(append_index_column(results, index))
+            else:
+                all_results.append(results)
+    ret = np.array([])
+    if len(all_results) > 0:
+        ret = np.vstack(all_results)
+    if cols:
+        assert(index_col_name)
+        ret = Table(ret, list(cols + [index_col_name]))
+    return ret
+
 
 def collect_with_index(seq, func, kwargs=None, index_col_name=None):
-  "See collect()."
-  return collect(seq,func,kwargs,True,index_col_name)
+    """
+    See collect().
+    """
+    return collect(seq, func, kwargs, True, index_col_name)
 
-###################
-# Misc
-###################
-def random_subset_up_to_N(N, max_num=None):
-  """
-  Return a random subset of size min(N,max_num) of non-negative integers
-  up to N, in a permuted order.
-  
-  Args:
-    N (int): size of original set.
-
-    max_num (int): [optional]
-      Size of the random subset.
-      If not given, set to N.
-
-  Returns:
-    ndarray of randomly permuted integers [0,N) of size max_num
-  
-  Raises:
-    ValueError if N or max_num are <= 0.
-  """
-  if max_num == None:
-    max_num = N
-  if N <= 0 or max_num <= 0:
-    raise ValueError("Both N and max_num must > 0")
-  if max_num > N:
-    max_num = N
-  return np.random.permutation(N)[:max_num]
-
-def random_subset(vals, max_num=None):
-  """
-  Return a random subset of size min(len(vals),max_num) of a list of
-  values, randomly sampled without replacement from the original list.
-
-  Order is always permuted, even if max_num == len(vals).
-
-  Args:
-    vals (iterable): values to subset
-
-    max_num (int): [optional]
-      If not given or greater than len(vals), set to len(vals).
-
-  Returns:
-    list of values of size min(len(vals),max_num)
-  """
-  arr = np.array(vals)[random_subset_up_to_N(len(vals),max_num)]
-  return arr.tolist()
 
 def makedirs(dirname):
-  "Does what mkdir -p does, and returns dirname."
-  if not os.path.exists(dirname):
-    try:
-      os.makedirs(dirname)
-    except:
-      print("Exception on os.makedirs")
-  return dirname
+    "Does what mkdir -p does, and returns dirname."
+    if not os.path.exists(dirname):
+        try:
+            os.makedirs(dirname)
+        except:
+            print("Exception on os.makedirs")
+    return dirname
+
 
 def importance_sample(dist, num_points, kde=None):
-  """
-  dist is a list of numbers drawn from some distribution.
-  If kde is given, uses it, otherwise computes own.
-  Return num_points points to sample this dist at, spaced such that
-  approximately the same area is between each pair of sample points.
-  """
-  if not kde:
-    kde = st.gaussian_kde(dist.T)
-  x = np.linspace(np.min(dist),np.max(dist))
-  y = kde.evaluate(x)
-  ycum = np.cumsum(y)
-  points = np.interp(np.linspace(np.min(ycum),np.max(ycum),num_points),xp=ycum,fp=x)
-  return points
+    """
+    dist is a list of numbers drawn from some distribution.
+    If kde is given, uses it, otherwise computes own.
+    Return num_points points to sample this dist at, spaced such that
+    approximately the same area is between each pair of sample points.
+    """
+    if not kde:
+        kde = st.gaussian_kde(dist.T)
+    x = np.linspace(np.min(dist), np.max(dist))
+    y = kde.evaluate(x)
+    ycum = np.cumsum(y)
+    points = np.interp(
+        np.linspace(np.min(ycum), np.max(ycum), num_points), xp=ycum, fp=x)
+    return points
 
-def fequal(a,b,tol=.0000001):
-  """
-  Return True if the two floats are very close in value, and False
-  otherwise.
-  """
-  return abs(a-b)<tol
+
+def fequal(a, b, tol=.0000001):
+    """
+    Return True if the two floats are very close in value, and False
+    otherwise.
+    """
+    return abs(a - b) < tol
+
 
 def log2(x):
-  "Base-2 log that returns 0 if x==0."
-  y = np.atleast_1d(np.copy(x))
-  y[y==0]=1
-  return np.log2(y)
+    "Base-2 log that returns 0 if x==0."
+    y = np.atleast_1d(np.copy(x))
+    y[y == 0] = 1
+    return np.log2(y)
 
-def mean_squared_error(y_true,y_pred):
-  "Because sklearn.metrics is wrong."
-  return np.mean((y_pred - y_true) ** 2)
 
 def add_polynomial_terms(X):
-  """
-  Return matrix X augmented with columns representing 2-dgree polynomial
-  expansions of its columns.
+    """
+    Return matrix X augmented with columns representing 2-dgree polynomial
+    expansions of its columns.
 
-  Examples
-  --------
-  >>> X = np.array([[1,2,3,4],[5,6,7,8]]).T
-  array([[1, 5],
-         [2, 6],
-         [3, 7],
-         [4, 8]])
-  >>> add_polynomial_terms(X)
-  array([[ 1,  5,  1,  5, 25],
-         [ 2,  6,  4, 12, 36],
-         [ 3,  7,  9, 21, 49],
-         [ 4,  8, 16, 32, 64]])
+    Examples
+    --------
+    >>> X = np.array([[1,2,3,4],[5,6,7,8]]).T
+    array([[1, 5],
+           [2, 6],
+           [3, 7],
+           [4, 8]])
+    >>> add_polynomial_terms(X)
+    array([[ 1,  5,  1,  5, 25],
+           [ 2,  6,  4, 12, 36],
+           [ 3,  7,  9, 21, 49],
+           [ 4,  8, 16, 32, 64]])
 
-  """
-  from itertools import combinations_with_replacement as cwr
-  # TODO: will need to combine column indices
-  col_combinations = [x for x in cwr(range(X.shape[1]), 2)]
-  poly_cols = [np.prod(X[:,c],axis=1) for c in col_combinations]
-  return np.hstack((X, np.array(poly_cols).T))
+    """
+    from itertools import combinations_with_replacement as cwr
+    # TODO: will need to combine column indices
+    col_combinations = [x for x in cwr(range(X.shape[1]), 2)]
+    poly_cols = [np.prod(X[:, c], axis=1) for c in col_combinations]
+    return np.hstack((X, np.array(poly_cols).T))
+
 
 def cartesian(arrays, out=None):
     """
@@ -284,102 +216,49 @@ def cartesian(arrays, out=None):
         out = np.zeros([n, len(arrays)], dtype=dtype)
 
     m = n / arrays[0].size
-    out[:,0] = np.repeat(arrays[0], m)
+    out[:, 0] = np.repeat(arrays[0], m)
     if arrays[1:]:
-        cartesian(arrays[1:], out=out[0:m,1:])
+        cartesian(arrays[1:], out=out[0:m, 1:])
         for j in xrange(1, arrays[0].size):
-            out[j*m:(j+1)*m,1:] = out[0:m,1:]
+            out[j * m:(j + 1) * m, 1:] = out[0:m, 1:]
     return out
-  
 
-from collections import Counter
-def determine_bin(data, bounds, asInt=True):
-  """ 
-  For data and given bounds, determine in which bin each point falls.
-  asInt=True: return number of bin each val falls in
-  asInt=False: return representative value for each val (center between bounds)
-  """
-  num_bins = bounds.shape[0]-1
-  ret_tab = np.zeros((data.shape[0],1))
-  col_bin = np.zeros((data.shape[0],1))
-  bin_values = np.zeros(bounds.shape)
-  last_val = 0.
-  
-  for bidx, b in enumerate(bounds):
-    bin_values[bidx] = (last_val + b)/2.
-    if bidx == 0:
-      continue
-    last_val = b
-    col_bin += np.matrix(data < b, dtype=int).T
-  
-  bin_values = bin_values[1:]    
-  col_bin[col_bin == 0] = 1  
-  
-  if asInt:
-    a = num_bins - col_bin
-    ret_tab = a[:,0]     
-  else:    
-    for rowdex in range(data.shape[0]):
-      ret_tab[rowdex, 0] = bin_values[int(col_bin[rowdex]-1)]
-  return ret_tab
 
-def histogram(x, num_bins, normalize=False):
-  """
-  compute a histogram for x = np.array and num_bins bins
-  assumpt: x is already binned up 
-  """
-  bounds = np.linspace(np.min(x), np.max(x), num_bins+1)
-  x = determine_bin(x, bounds)
-  return histogram_just_count(x, num_bins, normalize)
-
-def histogram_just_count(x, num_bins, normalize=False):
-  if hasattr(x, 'shape'):
-    # This is a np object
-    if x.ndim > 1:
-      x = np.hstack(x)
-  counts = Counter(x)
-  histogram = [counts.get(x,0) for x in range(num_bins)]
-  histogram = np.matrix(histogram, dtype = 'float64')
-  if normalize:
-    histogram = histogram/np.sum(histogram)
-  return histogram
-
-##############################################
-# Shell interaction
-##############################################
 def run_matlab_script(matlab_script_dir, function_string):
-  """
-  Takes a directory where the desired script is, changes dir to it, runs it with the given function and parameter string, and then chdirs back to where we were.
-  """
-  if not os.path.exists(matlab_script_dir):
-    raise IOError("Cannot find the matlab_script_dir, not doing anything")
-  cwd = os.getcwd()
-  os.chdir(matlab_script_dir)
-  cmd = "matlab -nodesktop -nosplash -r \"%s; exit\"; stty echo" % function_string
-  run_command(cmd, loud=True)
-  os.chdir(cwd)
+    """
+    Takes a directory where the desired script is, changes dir to it, runs it with the given function and parameter string, and then chdirs back to where we were.
+    """
+    if not os.path.exists(matlab_script_dir):
+        raise IOError("Cannot find the matlab_script_dir, not doing anything")
+    cwd = os.getcwd()
+    os.chdir(matlab_script_dir)
+    cmd = "matlab -nodesktop -nosplash -r \"%s; exit\"; stty echo" % function_string
+    run_command(cmd, loud=True)
+    os.chdir(cwd)
+
 
 def run_command(command, loud=True):
-  """
-  Runs the passed string as a shell command. If loud, outputs the command and the times. If say exists, outputs it as well. Returns the retcode of the shell command.
-  """
-  retcode = -1
-  if loud:
-    print >>sys.stdout, "%s: Running command %s" % (curtime(), command)
-    time_start = time.time()
-    
-  try:
-    retcode = subprocess.call(command, shell=True, executable="/bin/bash")
-    if retcode < 0:
-      print >>sys.stderr, "Child was terminated by signal ", -retcode
-    else:
-      print >>sys.stderr, "Child returned ", retcode
-  except OSError, e:
-    print >>sys.stderr, "%s: Execution failed: "%curtime(), e
-  
-  if loud:
-    print >>sys.stdout, "%s: Finished running command. Elapsed time: %f" % (curtime(), (time.time()-time_start))
-  return retcode
+    """
+    Runs the passed string as a shell command. If loud, outputs the command and the times. If say exists, outputs it as well. Returns the retcode of the shell command.
+    """
+    retcode = -1
+    if loud:
+        print >>sys.stdout, "%s: Running command %s" % (curtime(), command)
+        time_start = time.time()
+
+    try:
+        retcode = subprocess.call(command, shell=True, executable="/bin/bash")
+        if retcode < 0:
+            print >>sys.stderr, "Child was terminated by signal ", -retcode
+        else:
+            print >>sys.stderr, "Child returned ", retcode
+    except OSError, e:
+        print >>sys.stderr, "%s: Execution failed: " % curtime(), e
+
+    if loud:
+        print >>sys.stdout, "%s: Finished running command. Elapsed time: %f" % (curtime(), (time.time() - time_start))
+    return retcode
+
 
 def curtime():
-  return time.strftime("%c %Z")
+    return time.strftime("%c %Z")

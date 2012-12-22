@@ -1,74 +1,79 @@
 import time
 
+
 class TicToc:
-  """
-  MATLAB-like tic/toc.
-  """
-  
-  def __init__(self):
-    self.labels = {}
-
-  def tic(self,label=None):
     """
-    Start timer for given label.
-
-    Args:
-      label (string): optional label for the timer.
-
-    Returns:
-      self
+    MATLAB-like tic/toc.
     """
-    if not label:
-      label = '__default'
-    self.labels[label] = time.time()
-    return self
 
-  def toc(self,label=None,quiet=False):
-    """
-    Return elapsed time for given label.
+    def __init__(self):
+        """
+        Start the timer on init.
+        """
+        self.labels = {}
+        self.tic()
 
-    Args:
-      label (string): [optional] label for the timer.
+    def tic(self, label=None):
+        """
+        Start timer for given label.
 
-      quiet (boolean): [optional] print time elapsed if false
+        Args:
+          label (string): optional label for the timer.
 
-    Returns:
-      elapsed (float): time elapsed
-    """
-    if not label:
-      label = '__default'
-    assert(label in self.labels)
-    elapsed = time.time()-self.labels[label]
-    name = " (%s)"%label if label else ""
-    if not quiet:
-      print "Time elapsed%s: %.3f"%(name,elapsed)
-    return elapsed
-  
-  def qtoc(self,label=None):
-    """
-    Call toc(label, quiet=True).
-    """
-    return self.toc(label,quiet=True)
+        Returns:
+          self
+        """
+        if not label:
+            label = '_default'
+        self.labels[label] = time.time()
+        return self
 
-  def running(self, label=None, msg=None, interval=1):
-    """
-    Print <msg> every <interval> seconds, running the timer for <label>.
+    def toc(self, label=None, quiet=False):
+        """
+        Return elapsed time for given label.
 
-    Args:
-      label (string): [optional] label for the timer
+        Args:
+          label (string): [optional] label for the timer.
 
-      msg (string): [optional] message to print
+          quiet (boolean): [optional] print time elapsed if false
 
-      interval (int): [optional] print every <interval> seconds
+        Returns:
+          elapsed (float): time elapsed
+        """
+        if not label:
+            label = '_default'
+        assert(label in self.labels)
+        elapsed = time.time() - self.labels[label]
+        name = " (%s)" % label if label else ""
+        if not quiet:
+            print "Time elapsed%s: %.3f" % (name, elapsed)
+        return elapsed
 
-    Return
-      self
+    def qtoc(self, label=None):
+        """
+        Call toc(label, quiet=True).
+        """
+        return self.toc(label, quiet=True)
 
-    Raises
-      none
-    """
-    if label not in self.labels:
-      self.tic(label)
-    if self.qtoc(label) > 1:
-      print(msg)
-      self.tic(label)
+    def running(self, label=None, msg=None, interval=1):
+        """
+        Print <msg> every <interval> seconds, running the timer for <label>.
+
+        Args:
+          label (string): [optional] label for the timer
+
+          msg (string): [optional] message to print
+
+          interval (int): [optional] print every <interval> seconds
+
+        Return
+          self
+
+        Raises
+          none
+        """
+        if label not in self.labels:
+            self.tic(label)
+        if self.qtoc(label) > 1:
+            print(msg)
+            self.tic(label)
