@@ -25,6 +25,7 @@ class TicToc:
         """
         if not label:
             label = '_default'
+        label = str(label)
         self.labels[label] = time.time()
         return self
 
@@ -42,11 +43,12 @@ class TicToc:
         """
         if not label:
             label = '_default'
+        label = str(label)
         assert(label in self.labels)
         elapsed = time.time() - self.labels[label]
         name = " (%s)" % label if label else ""
         if not quiet:
-            print "Time elapsed%s: %.3f" % (name, elapsed)
+            print "%s finished in %.3f s" % (name, elapsed)
         return elapsed
 
     def qtoc(self, label=None):
