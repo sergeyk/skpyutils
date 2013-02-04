@@ -11,6 +11,7 @@ import time
 import json
 import numpy as np
 import scipy.stats as st
+from collections import Counter
 from skpyutils.table import Table
 
 
@@ -102,6 +103,53 @@ def collect_with_index(seq, func, kwargs=None, index_col_name=None):
     See collect().
     """
     return collect(seq, func, kwargs, True, index_col_name)
+
+
+def random_subset_up_to_N(N, max_num=None):
+    """
+    Return a random subset of size min(N,max_num) of non-negative integers
+    up to N, in a permuted order.
+
+    Args:
+        N (int): size of original set.
+
+        max_num (int): [optional]
+            Size of the random subset.
+            If not given, set to N.
+
+    Returns:
+        ndarray of randomly permuted integers [0,N) of size max_num
+
+    Raises:
+        ValueError if N or max_num are <= 0.
+    """
+    if max_num is None:
+        max_num = N
+    if N <= 0 or max_num <= 0:
+        raise ValueError("Both N and max_num must > 0")
+    if max_num > N:
+        max_num = N
+    return np.random.permutation(N)[:max_num]
+
+
+def random_subset(vals, max_num=None):
+    """
+    Return a random subset of size min(len(vals),max_num) of a list of
+    values, randomly sampled without replacement from the original list.
+
+    Order is always permuted, even if max_num == len(vals).
+
+    Args:
+        vals (iterable): values to subset
+
+        max_num (int): [optional]
+            If not given or greater than len(vals), set to len(vals).
+
+    Returns:
+        list of values of size min(len(vals),max_num)
+    """
+    arr = np.array(vals)[random_subset_up_to_N(len(vals), max_num)]
+    return arr.tolist()
 
 
 def makedirs(dirname):
@@ -224,6 +272,61 @@ def cartesian(arrays, out=None):
     return out
 
 
+# TODO: replace with numpy method
+def determine_bin(data, bounds, asInt=True):
+    """
+    For data and given bounds, determine in which bin each point falls.
+    asInt=True: return number of bin each val falls in
+    asInt=False: return representative value for each val (center between bounds)
+    """
+    num_bins = bounds.shape[0] - 1
+    ret_tab = np.zeros((data.shape[0], 1))
+    col_bin = np.zeros((data.shape[0], 1))
+    bin_values = np.zeros(bounds.shape)
+    last_val = 0.
+
+    for bidx, b in enumerate(bounds):
+        bin_values[bidx] = (last_val + b) / 2.
+        if bidx == 0:
+            continue
+        last_val = b
+        col_bin += np.matrix(data < b, dtype=int).T
+
+    bin_values = bin_values[1:]
+    col_bin[col_bin == 0] = 1
+
+    if asInt:
+        a = num_bins - col_bin
+        ret_tab = a[:, 0]
+    else:
+        for rowdex in range(data.shape[0]):
+            ret_tab[rowdex, 0] = bin_values[int(col_bin[rowdex] - 1)]
+    return ret_tab
+
+
+def histogram(x, num_bins, normalize=False):
+    """
+    compute a histogram for x = np.array and num_bins bins
+    assumpt: x is already binned up
+    """
+    bounds = np.linspace(np.min(x), np.max(x), num_bins + 1)
+    x = determine_bin(x, bounds)
+    return histogram_just_count(x, num_bins, normalize)
+
+
+def histogram_just_count(x, num_bins, normalize=False):
+    if hasattr(x, 'shape'):
+        # This is a np object
+        if x.ndim > 1:
+            x = np.hstack(x)
+    counts = Counter(x)
+    histogram = [counts.get(x, 0) for x in range(num_bins)]
+    histogram = np.matrix(histogram, dtype='float64')
+    if normalize:
+        histogram = histogram / np.sum(histogram)
+    return histogram
+
+
 def run_matlab_script(matlab_script_dir, function_string):
     """
     Takes a directory where the desired script is, changes dir to it, runs it with the given function and parameter string, and then chdirs back to where we were.
@@ -256,7 +359,8 @@ def run_command(command, loud=True):
         print >>sys.stderr, "%s: Execution failed: " % curtime(), e
 
     if loud:
-        print >>sys.stdout, "%s: Finished running command. Elapsed time: %f" % (curtime(), (time.time() - time_start))
+        print >>sys.stdout, "%s: Finished running command. Elapsed time: %f" % (
+            curtime(), (time.time() - time_start))
     return retcode
 
 
